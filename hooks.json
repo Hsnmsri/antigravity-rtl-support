@@ -1,0 +1,16 @@
+{
+  "antigravity-rtl-fix": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node scripts/inject-rtl.js"
+      }
+    ],
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node scripts/inject-rtl.js"
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="rtlGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+    <linearGradient id="ltrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Container -->
+  <rect x="12" y="12" width="104" height="104" rx="24" fill="#18181b" stroke="#27272a" stroke-width="2"/>
+
+  <!-- RTL Indicator Lines (Right-aligned lines) -->
+  <rect x="36" y="32" width="60" height="6" rx="3" fill="url(#rtlGrad)"/>
+  <rect x="48" y="44" width="48" height="6" rx="3" fill="url(#rtlGrad)"/>
+  <rect x="28" y="56" width="68" height="6" rx="3" fill="url(#rtlGrad)"/>
+
+  <!-- Bidirectional Arrow Section -->
+  <g transform="translate(24, 76)">
+    <!-- Right-to-Left Arrow -->
+    <path d="M56 8 L24 8 M32 2 L24 8 L32 14" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Left-to-Right Arrow -->
+    <path d="M24 24 L56 24 M48 18 L56 24 L48 30" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Badge Indicator: FA / EN -->
+  <text x="96" y="94" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="bold" fill="#f4f4f5" text-anchor="end">فا ⇄ EN</text>
+</svg>

@@ -1,0 +1,15 @@
+{
+  "name": "antigravity-rtl-support",
+  "displayName": "RTL & LTR Chat Bidirectional Fixer",
+  "version": "1.0.0",
+  "description": "Automatically detects RTL (Persian/Arabic) and LTR text in Antigravity chat, correctly displaying mixed Persian and English text without breaking layouts.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "رفع مشکل متن‌های راست‌به‌چپ (RTL) و چپ‌به‌راست (LTR) در چت",
+    "اعمال و بررسی وضعیت افزونه RTL در محیط چت",
+    "راهنمای تنظیم خودکار راست‌چین برای متن‌های فارسی و انگلیسی"
+  ],
+  "author": {
+    "name": "Hossein Mansouri"
+  }
+}
