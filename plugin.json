@@ -5,9 +5,9 @@
   "description": "Automatically detects RTL (Persian/Arabic) and LTR text in Antigravity chat, correctly displaying mixed Persian and English text, with a manual Text Tools dropdown.",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
-    "رفع مشکل متون راست‌به‌چپ (RTL) و چپ‌به‌راست (LTR) در چت",
-    "بررسی وضعیت افزونه پشتیبانی متون دوزبانه و فارسی در چت",
-    "راهنمای تنظیم خودکار و دستی راست‌چین برای متون فارسی"
+    "Fix RTL and LTR mixed text alignment issues in chat",
+    "Check bidirectional text support status and features",
+    "Toggle manual direction override for chat text selection"
   ],
   "author": {
     "name": "Hossein Mansouri",

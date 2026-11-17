@@ -1,49 +1,59 @@
-# Antigravity RTL & LTR Support Plugin
+# Antigravity RTL & LTR Support
 
-پلاگین جامع و هوشمند رفع مشکل نمایش متون راست‌به‌چپ (فارسی و عربی) و متون دوزبانه در محیط چت Antigravity.
-
----
-
-## قابلیت‌های کلیدی
-
-- **تشخیص خودکار و هوشمند جهت متن (Smart BiDi Detection):**
-  تشخیص دقیق جملات فارسی و تنظیم خودکار تراز و جهت (`dir="rtl"`) حتی در جملاتی که با کلمات انگلیسی، شناسه‌ها یا دستورات ترمینال آغاز می‌شوند.
-- **تراز صحیح کدهای درون‌خطی و اصطلاحات انگلیسی:**
-  نمایش کاملاً استاندارد قطعه‌کدهای درون‌خطی (`inline-code`) در میان جملات فارسی بدون به‌هم‌ریختگی کلمات و قرارگیری دقیق علائم نگارشی در انتهای سطر.
-- **حفظ ساختار بلوک‌های کد (`pre code`):**
-  بلوک‌های کد چندخطی و فایل‌های کانفیگ به صورت کاملاً دست‌نخورده، چپ‌چین (LTR) و ایزوله باقی می‌مانند.
-- **منوی اختصاصی ابزارهای متنی (`Text Tools`):**
-  هنگام انتخاب متن در محیط چت، دکمهٔ اختصاصی `Text Tools` در کنار `Quote` ظاهر می‌شود و با آیکون‌های وکتور SVG امکان تنظیم دستی جهت را فراهم می‌سازد:
-  - **Right-to-Left (RTL):** تغییر جهت و تراز بخش انتخابی به راست‌به‌چپ.
-  - **Left-to-Right (LTR):** تغییر جهت و تراز بخش انتخابی به چپ‌به‌راست.
-  - **Automatic (Auto):** بازگرداندن بخش به حالت تشخیص خودکار.
-- **نشانگر ملایم بخش‌های دستی:**
-  هر بخشی که به صورت دستی تنظیم شود، با یک هایلایت ملایم و خط حاشیهٔ ظریف مشخص می‌شود تا از حالت خودکار متمایز باشد.
-- **پشتیبانی از کارت‌های تعاملی (`ask_question`):**
-  راست‌چین‌سازی هوشمند کارت‌های سوال، گزینه‌ها و فیلد نوشتن پاسخ.
+A comprehensive bidirectional text and layout enhancer for Google Antigravity IDE and chat. It automatically detects and formats mixed Right-to-Left (Persian, Arabic, Hebrew) and Left-to-Right (English, code) text without breaking chat bubbles, alignment, or code blocks.
 
 ---
 
-## راهنمای نصب
+## Features
 
-### ۱. نصب سراسری (سیستمی)
-برای فعال‌سازی در تمام پروژه‌ها و نشست‌های Antigravity:
+- **Smart BiDi Detection:**
+  Automatically detects RTL text and applies proper `dir="rtl"` alignment, even for sentences starting with English words, code identifiers, or CLI commands (`git`, `npm`, etc.).
+- **Proper Inline Code Isolation:**
+  Inline code snippets (`<code>`) and technical terms remain Left-to-Right without disrupting sentence flow or causing punctuation flipping.
+- **Strict LTR Code Blocks:**
+  Multi-line fenced code blocks (`<pre><code>`) and configuration files are strictly preserved in their original LTR format and syntax highlighting.
+- **Integrated Text Tools Dropdown:**
+  Selecting any chat text reveals a dedicated **Text Tools ▼** button directly inside the native Quote popup pill:
+  - **Right-to-Left (RTL):** Forces Right-to-Left direction and right alignment for the selected block.
+  - **Left-to-Right (LTR):** Forces Left-to-Right direction and left alignment for the selected block.
+  - **Automatic (Auto):** Removes manual overrides and returns direction control to the auto-detection algorithm.
+- **Subtle Manual Override Indicator:**
+  Blocks whose direction has been manually adjusted are styled with a subtle tinted background and a slim accent border, clearly indicating manual mode without visual distraction.
+- **Interactive Question Cards Support:**
+  Ensures interactive `ask_question` cards, multiple-choice options, and custom write-in inputs align naturally according to text direction.
+- **Full SVG Vector Icons:**
+  Every UI control and menu option uses crisp, dark-theme-native SVG vector icons with zero reliance on platform-specific emojis.
+
+---
+
+## Installation
+
+### 1. Global Installation (Recommended)
+To enable the plugin globally across all your projects and sessions:
+
 ```bash
 git clone https://github.com/hsnmsri/antigravity-rtl-support.git ~/.gemini/config/plugins/antigravity-rtl-support
 ```
 
-### ۲. نصب پروژه‌ای (مخصوص تیم)
-برای استفاده اختصاصی در یک مخزن کاری یا تیمی، پوشهٔ افزونه را در مسیر زیر در ریشهٔ پروژه قرار دهید:
+### 2. Workspace Installation (Team / Project Scope)
+To share this plugin with your team within a specific project repository, clone or place it under:
+
 ```bash
 .agents/plugins/antigravity-rtl-support/
 ```
 
 ---
 
-## اطلاعات توسعه‌دهنده و راه‌های ارتباطی
+## Developer & Contact
 
-- **توسعه‌دهنده:** حسین منصوری (Hossein Mansouri)
-- **وب‌سایت:** [hosseinmansouri.ir](https://hosseinmansouri.ir)
-- **گیت‌هاب:** [@hsnmsri](https://github.com/hsnmsri)
-- **اینستاگرام:** [@humansouri](https://instagram.com/humansouri)
-- **ایمیل:** hsnmsri82@gmail.com
+- **Author:** Hossein Mansouri
+- **Website:** [hosseinmansouri.ir](https://hosseinmansouri.ir)
+- **GitHub:** [@hsnmsri](https://github.com/hsnmsri)
+- **Instagram:** [@humansouri](https://instagram.com/humansouri)
+- **Email:** hsnmsri82@gmail.com
+
+---
+
+## License
+
+This project is licensed under the MIT License.
