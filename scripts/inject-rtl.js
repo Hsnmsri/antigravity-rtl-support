@@ -35,7 +35,7 @@ async function main() {
     process.exit(0);
   }
 
-  const pages = targets.filter(t => t.type === 'page' && t.webSocketDebuggerUrl);
+  const pages = targets.filter(t => t.type === 'page' && t.webSocketDebuggerUrl && t.url && !t.url.startsWith('data:'));
   if (pages.length === 0) {
     process.exit(0);
   }
@@ -49,6 +49,8 @@ async function main() {
     if (oldToolbar) oldToolbar.remove();
     const oldMenu = document.getElementById('agy-dir-dropdown-menu');
     if (oldMenu) oldMenu.remove();
+    const oldChatToggle = document.getElementById('agy-chat-rtl-toggle');
+    if (oldChatToggle) oldChatToggle.remove();
     document.querySelectorAll('.agy-direction-pill-btn:not(.agy-direction-wrapper *)').forEach(el => el.remove());
     document.querySelectorAll('.agy-direction-wrapper').forEach(el => el.remove());
 
@@ -277,6 +279,44 @@ async function main() {
       .agy-dir-opt.active .check-mark {
         opacity: 1;
       }
+
+      /* Chat-specific Disabled State (When toggled OFF for this chat) */
+      body.agy-rtl-chat-disabled .agy-rtl-block:not([data-manual-dir="rtl"]) {
+        direction: inherit !important;
+        text-align: inherit !important;
+        unicode-bidi: normal !important;
+      }
+      body.agy-rtl-chat-disabled .agy-rtl-block ul,
+      body.agy-rtl-chat-disabled .agy-rtl-block ol {
+        direction: inherit !important;
+        text-align: inherit !important;
+        padding-right: 0 !important;
+        padding-left: 1.5rem !important;
+      }
+      body.agy-rtl-chat-disabled [contenteditable="true"].agy-rtl-block,
+      body.agy-rtl-chat-disabled textarea.agy-rtl-block {
+        direction: inherit !important;
+        text-align: inherit !important;
+      }
+      body.agy-rtl-chat-disabled [data-testid="ask-question-header-text"].agy-rtl-block,
+      body.agy-rtl-chat-disabled [data-testid="ask-question-header-text"] .agy-rtl-block,
+      body.agy-rtl-chat-disabled [data-testid="ask-question-option-text"].agy-rtl-block,
+      body.agy-rtl-chat-disabled [data-testid="ask-question-option-text"] .agy-rtl-block,
+      body.agy-rtl-chat-disabled [data-testid="ask-question-option"].agy-rtl-block,
+      body.agy-rtl-chat-disabled [data-testid="ask-question-writein"].agy-rtl-block,
+      body.agy-rtl-chat-disabled [data-testid="ask-question-option-hover-card"].agy-rtl-block {
+        direction: inherit !important;
+        text-align: inherit !important;
+        unicode-bidi: normal !important;
+      }
+      body.agy-rtl-chat-disabled .agy-user-bubble.agy-rtl-block,
+      body.agy-rtl-chat-disabled .agy-user-bubble-frame:has(.agy-rtl-block) {
+        direction: inherit !important;
+        text-align: inherit !important;
+      }
+      body.agy-rtl-chat-disabled .agy-direction-wrapper {
+        display: none !important;
+      }
     \`;
 
     const SELECTORS = [
@@ -289,6 +329,96 @@ async function main() {
       '[data-testid="ask-question-writein"]',
       '[data-testid="ask-question-option-hover-card"]'
     ].join(', ');
+
+    function getConversationId() {
+      const m = window.location.pathname.match(new RegExp('/c/([^/?]+)'));
+      if (m) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const focused = urlParams.get('focused');
+        return focused ? (m[1] + '_' + focused) : m[1];
+      }
+      return 'default';
+    }
+
+    window.__AGY_RTL_CHAT_STATE__ = window.__AGY_RTL_CHAT_STATE__ || {};
+
+    function isRtlEnabledForChat() {
+      const convId = getConversationId();
+      try {
+        return localStorage.getItem('agy_rtl_chat_disabled_' + convId) !== 'true';
+      } catch (_) {
+        return window.__AGY_RTL_CHAT_STATE__[convId] !== 'disabled';
+      }
+    }
+
+    function setRtlEnabledForChat(enabled) {
+      const convId = getConversationId();
+      try {
+        if (enabled) {
+          localStorage.removeItem('agy_rtl_chat_disabled_' + convId);
+        } else {
+          localStorage.setItem('agy_rtl_chat_disabled_' + convId, 'true');
+        }
+      } catch (_) {
+        window.__AGY_RTL_CHAT_STATE__[convId] = enabled ? 'enabled' : 'disabled';
+      }
+    }
+
+    function updateChatToggleUI() {
+      const btn = document.getElementById('agy-chat-rtl-toggle');
+      const isEnabled = isRtlEnabledForChat();
+
+      if (isEnabled) {
+        document.body.classList.remove('agy-rtl-chat-disabled');
+      } else {
+        document.body.classList.add('agy-rtl-chat-disabled');
+      }
+
+      if (!btn) return;
+
+      if (isEnabled) {
+        btn.title = 'RTL Support: ON (Click to disable for this chat)';
+        btn.setAttribute('aria-label', 'RTL Support: ON');
+        btn.style.opacity = '1';
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M4 6h16M4 12h10M4 18h14M16 9l4 3-4 3"/></svg><span style="font-size:12px;font-weight:600;color:var(--foreground,#fafafa);">RTL</span><span style="width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 6px #38bdf8;margin-left:1px;"></span>';
+      } else {
+        btn.title = 'RTL Support: OFF (Click to enable for this chat)';
+        btn.setAttribute('aria-label', 'RTL Support: OFF');
+        btn.style.opacity = '0.7';
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" style="opacity:0.5;"><path d="M4 6h16M4 12h10M4 18h14M16 9l4 3-4 3"/></svg><span style="font-size:12px;font-weight:500;color:var(--muted-foreground,#a1a1aa);">RTL</span><span style="width:6px;height:6px;border-radius:50%;background:#71717a;margin-left:1px;"></span>';
+      }
+    }
+
+    function attachChatToggleButton() {
+      const turboBtn = document.querySelector(\'[data-testid="permissions-selector-trigger"]\');
+      if (!turboBtn || !turboBtn.parentElement) return;
+
+      let btn = document.getElementById(\'agy-chat-rtl-toggle\');
+      if (!btn || !btn.isConnected) {
+        if (btn) btn.remove();
+        btn = document.createElement(\'button\');
+        btn.id = \'agy-chat-rtl-toggle\';
+        btn.type = \'button\';
+        btn.setAttribute(\'data-no-drag\', \'\');
+        btn.tabIndex = 0;
+        btn.className = \'flex cursor-pointer items-center h-7 gap-1.5 rounded-full px-2 text-xs font-medium text-secondary-foreground select-none outline-none hover:bg-secondary transition-colors shrink-0 whitespace-nowrap border border-border/40\';
+
+        btn.addEventListener(\'click\', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const nextState = !isRtlEnabledForChat();
+          setRtlEnabledForChat(nextState);
+          updateChatToggleUI();
+          if (nextState) {
+            processAll();
+          }
+        });
+
+        turboBtn.parentElement.insertBefore(btn, turboBtn);
+      }
+
+      updateChatToggleUI();
+    }
 
     function processElement(el) {
       if (!el || el.id === 'antigravity-rtl-fix-style' || el.closest('.agy-dir-dropdown-menu') || el.closest('.agy-direction-wrapper')) return;
@@ -311,6 +441,8 @@ async function main() {
         el.style.textAlign = 'left';
         return;
       }
+
+      if (!isRtlEnabledForChat()) return;
 
       const isInput = el.getAttribute('contenteditable') === 'true' || el.tagName === 'TEXTAREA';
       const text = isInput ? (el.textContent || el.value || '') : (el.textContent || '');
@@ -337,6 +469,12 @@ async function main() {
     }
 
     function processAll() {
+      attachChatToggleButton();
+      if (!isRtlEnabledForChat()) {
+        document.body.classList.add('agy-rtl-chat-disabled');
+        return;
+      }
+      document.body.classList.remove('agy-rtl-chat-disabled');
       const targets = document.querySelectorAll(SELECTORS);
       targets.forEach(processElement);
       const pills = document.querySelectorAll('.agy-selection-pill');
@@ -583,17 +721,19 @@ async function main() {
     document.addEventListener('mouseup', onMouseUp);
     document.addEventListener('keyup', onKeyUp);
     document.addEventListener('input', onInput, true);
+    window.addEventListener('popstate', attachChatToggleButton);
 
     let throttleTimeout = null;
     const observer = new MutationObserver((mutations) => {
       if (throttleTimeout) return;
       throttleTimeout = setTimeout(() => {
         throttleTimeout = null;
+        attachChatToggleButton();
         for (const m of mutations) {
           if (m.type === 'childList') {
             for (const node of m.addedNodes) {
               if (node.nodeType === Node.ELEMENT_NODE) {
-                if (node.id === 'agy-direction-toolbar' || node.classList?.contains('agy-dir-dropdown-menu') || node.classList?.contains('agy-direction-wrapper')) continue;
+                if (node.id === 'agy-direction-toolbar' || node.id === 'agy-chat-rtl-toggle' || node.classList?.contains('agy-dir-dropdown-menu') || node.classList?.contains('agy-direction-wrapper')) continue;
                 if (node.matches && node.matches('.agy-selection-pill')) {
                   attachPillBtn(node);
                 }
@@ -626,6 +766,10 @@ async function main() {
       document.removeEventListener('mouseup', onMouseUp);
       document.removeEventListener('keyup', onKeyUp);
       document.removeEventListener('input', onInput, true);
+      window.removeEventListener('popstate', attachChatToggleButton);
+      const toggleBtn = document.getElementById('agy-chat-rtl-toggle');
+      if (toggleBtn) toggleBtn.remove();
+      document.body.classList.remove('agy-rtl-chat-disabled');
     };
 
     window.__ANTIGRAVITY_RTL_INJECTED__ = true;

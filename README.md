@@ -19,6 +19,8 @@ A comprehensive bidirectional text and layout enhancer for Google Antigravity ID
   - **Automatic (Auto):** Removes manual overrides and returns direction control to the auto-detection algorithm.
 - **Subtle Manual Override Indicator:**
   Blocks whose direction has been manually adjusted are styled with a subtle tinted background and a slim accent border, clearly indicating manual mode without visual distraction.
+- **Per-Chat RTL Toggle Button:**
+  A clean toggle button positioned right beside the input permissions selector (next to Turbo in the chat footer). Allows one-click switching between RTL support and default mode specifically for the current chat session, persisting preferences per conversation.
 - **Interactive Question Cards Support:**
   Ensures interactive `ask_question` cards, multiple-choice options, and custom write-in inputs align naturally according to text direction.
 - **Full SVG Vector Icons:**
