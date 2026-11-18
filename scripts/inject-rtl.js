@@ -1,8 +1,8 @@
 /**
  * Antigravity RTL & LTR Bidirectional Chat Injector
  * Injects dynamic RTL/LTR detection, MutationObserver, BiDi styling,
- * interactive ask_question card support, and a Text Tools dropdown menu directly inside
- * the native Quote selection pill, with subtle highlight indicator for manually overridden blocks.
+ * interactive ask_question card support, independent split-chat toggles,
+ * and text selection tools (both integrated into the native Quote pill and via floating toolbar).
  */
 
 const fs = require('fs');
@@ -49,8 +49,7 @@ async function main() {
     if (oldToolbar) oldToolbar.remove();
     const oldMenu = document.getElementById('agy-dir-dropdown-menu');
     if (oldMenu) oldMenu.remove();
-    const oldChatToggle = document.getElementById('agy-chat-rtl-toggle');
-    if (oldChatToggle) oldChatToggle.remove();
+    document.querySelectorAll('.agy-chat-rtl-toggle').forEach(el => el.remove());
     document.querySelectorAll('.agy-direction-pill-btn:not(.agy-direction-wrapper *)').forEach(el => el.remove());
     document.querySelectorAll('.agy-direction-wrapper').forEach(el => el.remove());
 
@@ -92,6 +91,22 @@ async function main() {
       .agy-ltr-block {
         direction: ltr !important;
         text-align: left !important;
+        unicode-bidi: isolate !important;
+      }
+
+      /* Explicit high specificity for manual overrides */
+      .agy-ltr-block[data-manual-dir="ltr"],
+      .agy-rtl-block [data-manual-dir="ltr"],
+      .agy-rtl-block .agy-ltr-block {
+        direction: ltr !important;
+        text-align: left !important;
+        unicode-bidi: isolate !important;
+      }
+      .agy-rtl-block[data-manual-dir="rtl"],
+      .agy-ltr-block [data-manual-dir="rtl"],
+      .agy-ltr-block .agy-rtl-block {
+        direction: rtl !important;
+        text-align: right !important;
         unicode-bidi: isolate !important;
       }
 
@@ -181,7 +196,7 @@ async function main() {
         unicode-bidi: isolate !important;
       }
 
-      /* QUOTE SELECTION PILL STYLES & PREVENT TRUNCATION */
+      /* QUOTE SELECTION PILL STYLES */
       .selection-popup.selection-quote-popup,
       .selection-popup:has(.agy-direction-wrapper) {
         width: max-content !important;
@@ -217,7 +232,7 @@ async function main() {
         padding-right: 8px !important;
       }
 
-      /* Dropdown Menu attached directly to agy-direction-wrapper */
+      /* Dropdown Menu attached to agy-direction-wrapper */
       .agy-dir-dropdown-menu {
         position: absolute !important;
         top: calc(100% + 4px) !important;
@@ -280,41 +295,103 @@ async function main() {
         opacity: 1;
       }
 
-      /* Chat-specific Disabled State (When toggled OFF for this chat) */
-      body.agy-rtl-chat-disabled .agy-rtl-block:not([data-manual-dir="rtl"]) {
+      /* Floating Direction Toolbar (fallback when no native quote pill is active) */
+      #agy-direction-toolbar {
+        position: fixed !important;
+        z-index: 10000000 !important;
+        display: none;
+        align-items: center !important;
+        gap: 3px !important;
+        padding: 3px 6px !important;
+        background: var(--card, #18181b) !important;
+        color: var(--foreground, #fafafa) !important;
+        border: 1px solid var(--border, #3f3f46) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+        font-size: 12px !important;
+        user-select: none !important;
+        pointer-events: auto !important;
+      }
+      .agy-float-btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 5px !important;
+        padding: 3px 8px !important;
+        border-radius: 5px !important;
+        border: none !important;
+        background: transparent !important;
+        color: var(--foreground, #fafafa) !important;
+        font-size: 12px !important;
+        cursor: pointer !important;
+        transition: background 100ms, color 100ms !important;
+        white-space: nowrap !important;
+      }
+      .agy-float-btn:hover {
+        background: var(--secondary, #27272a) !important;
+      }
+      .agy-float-btn.active {
+        background: rgba(56, 189, 248, 0.15) !important;
+        color: #38bdf8 !important;
+        font-weight: 600 !important;
+      }
+      .agy-float-divider {
+        width: 1px !important;
+        height: 14px !important;
+        background: var(--border, #3f3f46) !important;
+        margin: 0 2px !important;
+      }
+
+      /* Chat-specific Disabled State (When toggled OFF for that chat container) */
+      .agy-rtl-chat-disabled .agy-rtl-block:not([data-manual-dir="rtl"]),
+      [data-testid="conversation-view"].agy-rtl-chat-disabled .agy-rtl-block:not([data-manual-dir="rtl"]) {
         direction: inherit !important;
         text-align: inherit !important;
         unicode-bidi: normal !important;
       }
-      body.agy-rtl-chat-disabled .agy-rtl-block ul,
-      body.agy-rtl-chat-disabled .agy-rtl-block ol {
+      .agy-rtl-chat-disabled .agy-rtl-block ul,
+      .agy-rtl-chat-disabled .agy-rtl-block ol,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled .agy-rtl-block ul,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled .agy-rtl-block ol {
         direction: inherit !important;
         text-align: inherit !important;
         padding-right: 0 !important;
         padding-left: 1.5rem !important;
       }
-      body.agy-rtl-chat-disabled [contenteditable="true"].agy-rtl-block,
-      body.agy-rtl-chat-disabled textarea.agy-rtl-block {
+      .agy-rtl-chat-disabled [contenteditable="true"].agy-rtl-block,
+      .agy-rtl-chat-disabled textarea.agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled [contenteditable="true"].agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled textarea.agy-rtl-block {
         direction: inherit !important;
         text-align: inherit !important;
       }
-      body.agy-rtl-chat-disabled [data-testid="ask-question-header-text"].agy-rtl-block,
-      body.agy-rtl-chat-disabled [data-testid="ask-question-header-text"] .agy-rtl-block,
-      body.agy-rtl-chat-disabled [data-testid="ask-question-option-text"].agy-rtl-block,
-      body.agy-rtl-chat-disabled [data-testid="ask-question-option-text"] .agy-rtl-block,
-      body.agy-rtl-chat-disabled [data-testid="ask-question-option"].agy-rtl-block,
-      body.agy-rtl-chat-disabled [data-testid="ask-question-writein"].agy-rtl-block,
-      body.agy-rtl-chat-disabled [data-testid="ask-question-option-hover-card"].agy-rtl-block {
+      .agy-rtl-chat-disabled [data-testid="ask-question-header-text"].agy-rtl-block,
+      .agy-rtl-chat-disabled [data-testid="ask-question-header-text"] .agy-rtl-block,
+      .agy-rtl-chat-disabled [data-testid="ask-question-option-text"].agy-rtl-block,
+      .agy-rtl-chat-disabled [data-testid="ask-question-option-text"] .agy-rtl-block,
+      .agy-rtl-chat-disabled [data-testid="ask-question-option"].agy-rtl-block,
+      .agy-rtl-chat-disabled [data-testid="ask-question-writein"].agy-rtl-block,
+      .agy-rtl-chat-disabled [data-testid="ask-question-option-hover-card"].agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled [data-testid="ask-question-header-text"].agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled [data-testid="ask-question-header-text"] .agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled [data-testid="ask-question-option-text"].agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled [data-testid="ask-question-option-text"] .agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled [data-testid="ask-question-option"].agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled [data-testid="ask-question-writein"].agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled [data-testid="ask-question-option-hover-card"].agy-rtl-block {
         direction: inherit !important;
         text-align: inherit !important;
         unicode-bidi: normal !important;
       }
-      body.agy-rtl-chat-disabled .agy-user-bubble.agy-rtl-block,
-      body.agy-rtl-chat-disabled .agy-user-bubble-frame:has(.agy-rtl-block) {
+      .agy-rtl-chat-disabled .agy-user-bubble.agy-rtl-block,
+      .agy-rtl-chat-disabled .agy-user-bubble-frame:has(.agy-rtl-block),
+      [data-testid="conversation-view"].agy-rtl-chat-disabled .agy-user-bubble.agy-rtl-block,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled .agy-user-bubble-frame:has(.agy-rtl-block) {
         direction: inherit !important;
         text-align: inherit !important;
       }
-      body.agy-rtl-chat-disabled .agy-direction-wrapper {
+      .agy-rtl-chat-disabled .agy-direction-wrapper,
+      [data-testid="conversation-view"].agy-rtl-chat-disabled .agy-direction-wrapper {
         display: none !important;
       }
     \`;
@@ -340,89 +417,131 @@ async function main() {
       return 'default';
     }
 
+    function getConversationContainer(el) {
+      if (!el) return null;
+      const node = el.nodeType === Node.ELEMENT_NODE ? el : el.parentElement;
+      if (!node) return null;
+      return node.closest('[data-testid="conversation-view"]') || node.closest('[data-cascade-id]') || node.closest('.group\\\\/pane');
+    }
+
+    function getConversationIdForElement(el) {
+      const container = getConversationContainer(el);
+      if (container) {
+        const cascadeId = container.getAttribute('data-cascade-id');
+        if (cascadeId) return cascadeId;
+        const allViews = Array.from(document.querySelectorAll('[data-testid="conversation-view"]'));
+        if (allViews.length > 1) {
+          const idx = allViews.indexOf(container);
+          if (idx !== -1) {
+            return getConversationId() + '_pane_' + idx;
+          }
+        }
+      }
+      return getConversationId();
+    }
+
     window.__AGY_RTL_CHAT_STATE__ = window.__AGY_RTL_CHAT_STATE__ || {};
 
-    function isRtlEnabledForChat() {
-      const convId = getConversationId();
+    function isRtlEnabledForChat(convId) {
+      const cid = convId || getConversationId();
       try {
-        return localStorage.getItem('agy_rtl_chat_disabled_' + convId) !== 'true';
+        return localStorage.getItem('agy_rtl_chat_disabled_' + cid) !== 'true';
       } catch (_) {
-        return window.__AGY_RTL_CHAT_STATE__[convId] !== 'disabled';
+        return window.__AGY_RTL_CHAT_STATE__[cid] !== 'disabled';
       }
     }
 
-    function setRtlEnabledForChat(enabled) {
-      const convId = getConversationId();
+    function setRtlEnabledForChat(convId, enabled) {
+      const cid = convId || getConversationId();
       try {
         if (enabled) {
-          localStorage.removeItem('agy_rtl_chat_disabled_' + convId);
+          localStorage.removeItem('agy_rtl_chat_disabled_' + cid);
         } else {
-          localStorage.setItem('agy_rtl_chat_disabled_' + convId, 'true');
+          localStorage.setItem('agy_rtl_chat_disabled_' + cid, 'true');
         }
       } catch (_) {
-        window.__AGY_RTL_CHAT_STATE__[convId] = enabled ? 'enabled' : 'disabled';
+        window.__AGY_RTL_CHAT_STATE__[cid] = enabled ? 'enabled' : 'disabled';
       }
     }
 
-    function updateChatToggleUI() {
-      const btn = document.getElementById('agy-chat-rtl-toggle');
-      const isEnabled = isRtlEnabledForChat();
+    function updateAllChatToggles() {
+      const convViews = document.querySelectorAll('[data-testid="conversation-view"]');
+      convViews.forEach((convView, idx) => {
+        let cid = convView.getAttribute('data-cascade-id');
+        if (!cid && convViews.length > 1) {
+          cid = getConversationId() + '_pane_' + idx;
+        }
+        if (!cid) cid = getConversationId();
+        const enabled = isRtlEnabledForChat(cid);
+        convView.classList.toggle('agy-rtl-chat-disabled', !enabled);
+      });
 
-      if (isEnabled) {
-        document.body.classList.remove('agy-rtl-chat-disabled');
-      } else {
-        document.body.classList.add('agy-rtl-chat-disabled');
+      if (convViews.length === 0) {
+        const globalEnabled = isRtlEnabledForChat(getConversationId());
+        document.body.classList.toggle('agy-rtl-chat-disabled', !globalEnabled);
       }
 
-      if (!btn) return;
+      const buttons = document.querySelectorAll('.agy-chat-rtl-toggle');
+      buttons.forEach((btn) => {
+        const cid = btn.getAttribute('data-conv-id') || getConversationIdForElement(btn);
+        const isEnabled = isRtlEnabledForChat(cid);
 
-      if (isEnabled) {
-        btn.title = 'RTL Support: ON (Click to disable for this chat)';
-        btn.setAttribute('aria-label', 'RTL Support: ON');
-        btn.style.opacity = '1';
-        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M4 6h16M4 12h10M4 18h14M16 9l4 3-4 3"/></svg><span style="font-size:12px;font-weight:600;color:var(--foreground,#fafafa);">RTL</span><span style="width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 6px #38bdf8;margin-left:1px;"></span>';
-      } else {
-        btn.title = 'RTL Support: OFF (Click to enable for this chat)';
-        btn.setAttribute('aria-label', 'RTL Support: OFF');
-        btn.style.opacity = '0.7';
-        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" style="opacity:0.5;"><path d="M4 6h16M4 12h10M4 18h14M16 9l4 3-4 3"/></svg><span style="font-size:12px;font-weight:500;color:var(--muted-foreground,#a1a1aa);">RTL</span><span style="width:6px;height:6px;border-radius:50%;background:#71717a;margin-left:1px;"></span>';
-      }
+        if (isEnabled) {
+          btn.title = 'RTL Support: ON (Click to disable for this chat)';
+          btn.setAttribute('aria-label', 'RTL Support: ON');
+          btn.style.opacity = '1';
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M4 6h16M4 12h10M4 18h14M16 9l4 3-4 3"/></svg><span style="font-size:12px;font-weight:600;color:var(--foreground,#fafafa);">RTL</span><span style="width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 6px #38bdf8;margin-left:1px;"></span>';
+        } else {
+          btn.title = 'RTL Support: OFF (Click to enable for this chat)';
+          btn.setAttribute('aria-label', 'RTL Support: OFF');
+          btn.style.opacity = '0.7';
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" style="opacity:0.5;"><path d="M4 6h16M4 12h10M4 18h14M16 9l4 3-4 3"/></svg><span style="font-size:12px;font-weight:500;color:var(--muted-foreground,#a1a1aa);">RTL</span><span style="width:6px;height:6px;border-radius:50%;background:#71717a;margin-left:1px;"></span>';
+        }
+      });
     }
 
-    function attachChatToggleButton() {
-      const turboBtn = document.querySelector(\'[data-testid="permissions-selector-trigger"]\');
-      if (!turboBtn || !turboBtn.parentElement) return;
+    function attachChatToggleButtons() {
+      const triggers = document.querySelectorAll('[data-testid="permissions-selector-trigger"]');
+      triggers.forEach((turboBtn) => {
+        if (!turboBtn || !turboBtn.parentElement) return;
+        const convId = getConversationIdForElement(turboBtn);
 
-      let btn = document.getElementById(\'agy-chat-rtl-toggle\');
-      if (!btn || !btn.isConnected) {
-        if (btn) btn.remove();
-        btn = document.createElement(\'button\');
-        btn.id = \'agy-chat-rtl-toggle\';
-        btn.type = \'button\';
-        btn.setAttribute(\'data-no-drag\', \'\');
-        btn.tabIndex = 0;
-        btn.className = \'flex cursor-pointer items-center h-7 gap-1.5 rounded-full px-2 text-xs font-medium text-secondary-foreground select-none outline-none hover:bg-secondary transition-colors shrink-0 whitespace-nowrap border border-border/40\';
+        let btn = turboBtn.parentElement.querySelector('.agy-chat-rtl-toggle');
+        if (!btn) {
+          btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'agy-chat-rtl-toggle flex cursor-pointer items-center h-7 gap-1.5 rounded-full px-2 text-xs font-medium text-secondary-foreground select-none outline-none hover:bg-secondary transition-colors shrink-0 whitespace-nowrap border border-border/40';
+          btn.setAttribute('data-no-drag', '');
+          btn.tabIndex = 0;
 
-        btn.addEventListener(\'click\', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const nextState = !isRtlEnabledForChat();
-          setRtlEnabledForChat(nextState);
-          updateChatToggleUI();
-          if (nextState) {
-            processAll();
-          }
-        });
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const cid = btn.getAttribute('data-conv-id') || getConversationIdForElement(btn);
+            const currentEnabled = isRtlEnabledForChat(cid);
+            const nextEnabled = !currentEnabled;
+            setRtlEnabledForChat(cid, nextEnabled);
+            updateAllChatToggles();
+            if (nextEnabled) {
+              processAll();
+            }
+          });
 
-        turboBtn.parentElement.insertBefore(btn, turboBtn);
-      }
+          turboBtn.parentElement.insertBefore(btn, turboBtn);
+        }
 
-      updateChatToggleUI();
+        btn.setAttribute('data-conv-id', convId);
+      });
+
+      updateAllChatToggles();
     }
 
     function processElement(el) {
-      if (!el || el.id === 'antigravity-rtl-fix-style' || el.closest('.agy-dir-dropdown-menu') || el.closest('.agy-direction-wrapper')) return;
+      if (!el || el.id === 'antigravity-rtl-fix-style' || el.closest('.agy-dir-dropdown-menu') || el.closest('.agy-direction-wrapper') || el.closest('#agy-direction-toolbar')) return;
       if (el.closest('pre') || (el.tagName === 'CODE' && el.closest('pre'))) return;
+
+      const convId = getConversationIdForElement(el);
+      const isEnabled = isRtlEnabledForChat(convId);
 
       // Honor manual user override if present
       const manualDir = el.getAttribute('data-manual-dir');
@@ -442,7 +561,8 @@ async function main() {
         return;
       }
 
-      if (!isRtlEnabledForChat()) return;
+      // If RTL is disabled for this chat, skip auto-detection
+      if (!isEnabled) return;
 
       const isInput = el.getAttribute('contenteditable') === 'true' || el.tagName === 'TEXTAREA';
       const text = isInput ? (el.textContent || el.value || '') : (el.textContent || '');
@@ -469,77 +589,87 @@ async function main() {
     }
 
     function processAll() {
-      attachChatToggleButton();
-      if (!isRtlEnabledForChat()) {
-        document.body.classList.add('agy-rtl-chat-disabled');
-        return;
-      }
-      document.body.classList.remove('agy-rtl-chat-disabled');
+      attachChatToggleButtons();
       const targets = document.querySelectorAll(SELECTORS);
       targets.forEach(processElement);
-      const pills = document.querySelectorAll('.agy-selection-pill');
+      const pills = document.querySelectorAll('.agy-selection-pill, .selection-quote-popup > div');
       pills.forEach(attachPillBtn);
     }
 
     window.__ANTIGRAVITY_PROCESS_RTL__ = processAll;
     processAll();
 
-    let activeTargetBlock = null;
+    let activeTargetBlocks = [];
 
-    function findTargetBlock() {
+    function getSelectedBlocks() {
       const sel = window.getSelection();
-      if (!sel || sel.isCollapsed) return null;
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return [];
+
+      const range = sel.getRangeAt(0);
+      const common = range.commonAncestorContainer;
+      const root = common.nodeType === Node.ELEMENT_NODE ? common : common.parentElement;
+      if (!root) return [];
+
+      const rootBlock = root.closest(SELECTORS);
+      if (rootBlock && !rootBlock.closest('.selection-popup') && !rootBlock.closest('.agy-dir-dropdown-menu') && !rootBlock.closest('#agy-direction-toolbar')) {
+        const subBlocks = Array.from(rootBlock.querySelectorAll(SELECTORS)).filter(b => sel.containsNode(b, true));
+        if (subBlocks.length > 0) return subBlocks;
+        return [rootBlock];
+      }
+
+      const blocks = Array.from(root.querySelectorAll(SELECTORS)).filter(b => {
+        return sel.containsNode(b, true) && !b.closest('.selection-popup') && !b.closest('.agy-dir-dropdown-menu') && !b.closest('#agy-direction-toolbar');
+      });
+      if (blocks.length > 0) return blocks;
+
       const nodes = [sel.anchorNode, sel.focusNode];
       for (const node of nodes) {
         if (!node) continue;
         const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-        if (!el) continue;
-        const block = el.closest(SELECTORS);
-        if (block && !block.closest('.selection-popup') && !block.closest('.agy-dir-dropdown-menu')) {
-          return block;
+        const b = el ? el.closest(SELECTORS) : null;
+        if (b && !b.closest('.selection-popup') && !b.closest('.agy-dir-dropdown-menu') && !b.closest('#agy-direction-toolbar')) {
+          return [b];
         }
       }
-      for (const node of nodes) {
-        if (!node) continue;
-        const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-        if (el && !el.closest('.selection-popup') && !el.closest('.agy-dir-dropdown-menu') && el !== document.body && el !== document.documentElement) {
-          return el;
-        }
-      }
-      return null;
+
+      return [];
     }
 
-    function applyDirectionChoice(choice, block) {
-      if (!block) return;
-      if (choice === 'rtl') {
-        block.setAttribute('data-manual-dir', 'rtl');
-        block.setAttribute('title', 'Manual direction: Right-to-Left (RTL)');
-        block.classList.add('agy-rtl-block', 'agy-manual-dir');
-        block.classList.remove('agy-ltr-block');
-        block.setAttribute('dir', 'rtl');
-        block.style.direction = 'rtl';
-        block.style.textAlign = 'right';
-      } else if (choice === 'ltr') {
-        block.setAttribute('data-manual-dir', 'ltr');
-        block.setAttribute('title', 'Manual direction: Left-to-Right (LTR)');
-        block.classList.add('agy-ltr-block', 'agy-manual-dir');
-        block.classList.remove('agy-rtl-block');
-        block.setAttribute('dir', 'ltr');
-        block.style.direction = 'ltr';
-        block.style.textAlign = 'left';
-      } else if (choice === 'auto') {
-        block.removeAttribute('data-manual-dir');
-        block.removeAttribute('title');
-        block.classList.remove('agy-manual-dir');
-        block.style.direction = '';
-        block.style.textAlign = '';
-        processElement(block);
+    function applyDirectionChoice(choice, blocks) {
+      if (!blocks) return;
+      const blockList = Array.isArray(blocks) ? blocks : [blocks];
+      for (const block of blockList) {
+        if (!block) continue;
+        if (choice === 'rtl') {
+          block.setAttribute('data-manual-dir', 'rtl');
+          block.setAttribute('title', 'Manual direction: Right-to-Left (RTL)');
+          block.classList.add('agy-rtl-block', 'agy-manual-dir');
+          block.classList.remove('agy-ltr-block');
+          block.setAttribute('dir', 'rtl');
+          block.style.direction = 'rtl';
+          block.style.textAlign = 'right';
+        } else if (choice === 'ltr') {
+          block.setAttribute('data-manual-dir', 'ltr');
+          block.setAttribute('title', 'Manual direction: Left-to-Right (LTR)');
+          block.classList.add('agy-ltr-block', 'agy-manual-dir');
+          block.classList.remove('agy-rtl-block');
+          block.setAttribute('dir', 'ltr');
+          block.style.direction = 'ltr';
+          block.style.textAlign = 'left';
+        } else if (choice === 'auto') {
+          block.removeAttribute('data-manual-dir');
+          block.removeAttribute('title');
+          block.classList.remove('agy-manual-dir');
+          block.style.direction = '';
+          block.style.textAlign = '';
+          processElement(block);
+        }
       }
     }
 
-    function updateMenuState(menu, block) {
-      if (!menu) return;
-      const manualDir = block ? block.getAttribute('data-manual-dir') : null;
+    function updateMenuState(menu, blocks) {
+      if (!menu || !blocks || blocks.length === 0) return;
+      const manualDir = blocks[0].getAttribute('data-manual-dir');
       const optButtons = menu.querySelectorAll('.agy-dir-opt');
       optButtons.forEach(btn => {
         const optDir = btn.getAttribute('data-dir');
@@ -551,10 +681,84 @@ async function main() {
       });
     }
 
+    function hideFloatingToolbar() {
+      const tb = document.getElementById('agy-direction-toolbar');
+      if (tb) tb.style.display = 'none';
+    }
+
+    function showFloatingToolbar(rect, blocks) {
+      let tb = document.getElementById('agy-direction-toolbar');
+      if (!tb) {
+        tb = document.createElement('div');
+        tb.id = 'agy-direction-toolbar';
+        tb.innerHTML = \`
+          <span style="font-weight:600;font-size:11px;color:var(--muted-foreground,#a1a1aa);padding:0 3px;">Text Tools:</span>
+          <button type="button" class="agy-float-btn" data-dir="rtl" title="Right-to-Left (RTL)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6H4M20 12H10M20 18H6M8 9l-4 3 4 3"/></svg>
+            <span>RTL</span>
+          </button>
+          <button type="button" class="agy-float-btn" data-dir="ltr" title="Left-to-Right (LTR)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h14M16 9l4 3-4 3"/></svg>
+            <span>LTR</span>
+          </button>
+          <span class="agy-float-divider"></span>
+          <button type="button" class="agy-float-btn" data-dir="auto" title="Reset to Automatic">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            <span>Auto</span>
+          </button>
+        \`;
+
+        tb.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+
+        tb.querySelectorAll('.agy-float-btn').forEach((b) => {
+          b.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const dir = b.getAttribute('data-dir');
+            applyDirectionChoice(dir, activeTargetBlocks);
+            updateFloatingToolbarState(tb, activeTargetBlocks);
+          });
+        });
+
+        document.body.appendChild(tb);
+      }
+
+      updateFloatingToolbarState(tb, blocks);
+
+      const tbWidth = 190;
+      const tbHeight = 32;
+      let top = rect.top - tbHeight - 6;
+      if (top < 10) {
+        top = rect.bottom + 6;
+      }
+      let left = rect.left + (rect.width / 2) - (tbWidth / 2);
+      if (left < 10) left = 10;
+      if (left + tbWidth > window.innerWidth - 10) left = window.innerWidth - tbWidth - 10;
+
+      tb.style.top = top + 'px';
+      tb.style.left = left + 'px';
+      tb.style.display = 'flex';
+    }
+
+    function updateFloatingToolbarState(tb, blocks) {
+      if (!tb || !blocks || blocks.length === 0) return;
+      const manualDir = blocks[0].getAttribute('data-manual-dir');
+      tb.querySelectorAll('.agy-float-btn').forEach((b) => {
+        const dir = b.getAttribute('data-dir');
+        if (manualDir) {
+          b.classList.toggle('active', dir === manualDir);
+        } else {
+          b.classList.toggle('active', dir === 'auto');
+        }
+      });
+    }
+
     function attachPillBtn(nativePill) {
       if (!nativePill || !nativePill.isConnected) return;
 
-      // Clean up any old duplicate or loose buttons not belonging to native buttons or our wrapper
       Array.from(nativePill.children).forEach(child => {
         if (child.matches && !child.matches('[data-testid="selection-quote-button"], [data-testid="selection-btw-button"], .agy-direction-wrapper')) {
           child.remove();
@@ -625,7 +829,6 @@ async function main() {
         </button>
       \`;
 
-      // Prevent losing text selection when clicking inside wrapper or dropdown
       wrapper.addEventListener('mousedown', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -638,14 +841,12 @@ async function main() {
         if (isOpen) {
           menu.style.display = 'none';
         } else {
-          // Close other open menus
           document.querySelectorAll('.agy-dir-dropdown-menu').forEach(m => m.style.display = 'none');
           
-          const target = findTargetBlock() || activeTargetBlock;
-          if (target) activeTargetBlock = target;
-          updateMenuState(menu, activeTargetBlock);
+          const blocks = getSelectedBlocks();
+          if (blocks.length > 0) activeTargetBlocks = blocks;
+          updateMenuState(menu, activeTargetBlocks);
 
-          // Boundary check: open upwards if near bottom of viewport
           const pillRect = nativePill.getBoundingClientRect();
           if (pillRect.bottom + 140 > window.innerHeight) {
             menu.style.top = 'auto';
@@ -664,10 +865,9 @@ async function main() {
           e.preventDefault();
           e.stopPropagation();
           const dirChoice = btn.getAttribute('data-dir');
-          const target = findTargetBlock() || activeTargetBlock;
-          if (target) {
-            applyDirectionChoice(dirChoice, target);
-          }
+          const blocks = getSelectedBlocks();
+          if (blocks.length > 0) activeTargetBlocks = blocks;
+          applyDirectionChoice(dirChoice, activeTargetBlocks);
           menu.style.display = 'none';
         });
       });
@@ -677,35 +877,75 @@ async function main() {
       nativePill.appendChild(wrapper);
     }
 
-    // Dismiss menu on true outside clicks
-    const onPointerDown = (e) => {
-      if (!e.target.closest || !e.target.closest('.agy-direction-wrapper')) {
+    function handleSelectionUI() {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+        hideFloatingToolbar();
         document.querySelectorAll('.agy-dir-dropdown-menu').forEach(m => m.style.display = 'none');
+        return;
+      }
+
+      const anchor = sel.anchorNode;
+      const convId = getConversationIdForElement(anchor);
+      const isEnabled = isRtlEnabledForChat(convId);
+
+      // If RTL is disabled for this chat, NEVER show direction tools
+      if (!isEnabled) {
+        hideFloatingToolbar();
+        document.querySelectorAll('.agy-dir-dropdown-menu').forEach(m => m.style.display = 'none');
+        document.querySelectorAll('.agy-direction-wrapper').forEach(w => w.style.display = 'none');
+        return;
+      }
+
+      const blocks = getSelectedBlocks();
+      if (blocks.length > 0) {
+        activeTargetBlocks = blocks;
+      }
+
+      const nativePill = document.querySelector('.agy-selection-pill, .selection-quote-popup > div');
+      if (nativePill && nativePill.isConnected) {
+        attachPillBtn(nativePill);
+        const wrapper = nativePill.querySelector('.agy-direction-wrapper');
+        if (wrapper) wrapper.style.display = 'inline-flex';
+        hideFloatingToolbar();
+      } else {
+        if (sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            showFloatingToolbar(rect, activeTargetBlocks);
+          }
+        }
+      }
+    }
+
+    const onPointerDown = (e) => {
+      if (!e.target.closest || (!e.target.closest('.agy-direction-wrapper') && !e.target.closest('#agy-direction-toolbar'))) {
+        document.querySelectorAll('.agy-dir-dropdown-menu').forEach(m => m.style.display = 'none');
+        hideFloatingToolbar();
       }
     };
 
     const onSelectionChange = () => {
-      const target = findTargetBlock();
-      if (target) activeTargetBlock = target;
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) {
+        hideFloatingToolbar();
+      } else {
+        const blocks = getSelectedBlocks();
+        if (blocks.length > 0) activeTargetBlocks = blocks;
+      }
     };
 
     const onMouseUp = () => {
-      setTimeout(() => {
-        const sel = window.getSelection();
-        if (sel && !sel.isCollapsed && sel.toString().trim()) {
-          const target = findTargetBlock();
-          if (target) activeTargetBlock = target;
-          const nativePill = document.querySelector('.agy-selection-pill');
-          if (nativePill && nativePill.isConnected) {
-            attachPillBtn(nativePill);
-          }
-        }
-      }, 50);
+      setTimeout(handleSelectionUI, 40);
     };
 
     const onKeyUp = (e) => {
       if (e.key === 'Escape') {
         document.querySelectorAll('.agy-dir-dropdown-menu').forEach(m => m.style.display = 'none');
+        hideFloatingToolbar();
+      } else if (e.shiftKey) {
+        setTimeout(handleSelectionUI, 40);
       }
     };
 
@@ -721,20 +961,26 @@ async function main() {
     document.addEventListener('mouseup', onMouseUp);
     document.addEventListener('keyup', onKeyUp);
     document.addEventListener('input', onInput, true);
-    window.addEventListener('popstate', attachChatToggleButton);
+    window.addEventListener('popstate', attachChatToggleButtons);
 
-    let throttleTimeout = null;
+    let observerTimeout = null;
+    let pendingMutations = [];
     const observer = new MutationObserver((mutations) => {
-      if (throttleTimeout) return;
-      throttleTimeout = setTimeout(() => {
-        throttleTimeout = null;
-        attachChatToggleButton();
-        for (const m of mutations) {
+      pendingMutations.push(...mutations);
+      if (observerTimeout) return;
+      observerTimeout = setTimeout(() => {
+        observerTimeout = null;
+        const currentMutations = pendingMutations;
+        pendingMutations = [];
+
+        attachChatToggleButtons();
+
+        for (const m of currentMutations) {
           if (m.type === 'childList') {
             for (const node of m.addedNodes) {
               if (node.nodeType === Node.ELEMENT_NODE) {
-                if (node.id === 'agy-direction-toolbar' || node.id === 'agy-chat-rtl-toggle' || node.classList?.contains('agy-dir-dropdown-menu') || node.classList?.contains('agy-direction-wrapper')) continue;
-                if (node.matches && node.matches('.agy-selection-pill')) {
+                if (node.id === 'agy-direction-toolbar' || node.classList?.contains('agy-chat-rtl-toggle') || node.classList?.contains('agy-dir-dropdown-menu') || node.classList?.contains('agy-direction-wrapper')) continue;
+                if (node.matches && (node.matches('.agy-selection-pill') || node.matches('.selection-quote-popup > div'))) {
                   attachPillBtn(node);
                 }
                 if (node.matches && node.matches(SELECTORS)) {
@@ -742,7 +988,7 @@ async function main() {
                 }
                 const subElements = node.querySelectorAll ? node.querySelectorAll(SELECTORS) : [];
                 subElements.forEach(processElement);
-                const subPills = node.querySelectorAll ? node.querySelectorAll('.agy-selection-pill') : [];
+                const subPills = node.querySelectorAll ? node.querySelectorAll('.agy-selection-pill, .selection-quote-popup > div') : [];
                 subPills.forEach(attachPillBtn);
               }
             }
@@ -766,14 +1012,16 @@ async function main() {
       document.removeEventListener('mouseup', onMouseUp);
       document.removeEventListener('keyup', onKeyUp);
       document.removeEventListener('input', onInput, true);
-      window.removeEventListener('popstate', attachChatToggleButton);
-      const toggleBtn = document.getElementById('agy-chat-rtl-toggle');
-      if (toggleBtn) toggleBtn.remove();
+      window.removeEventListener('popstate', attachChatToggleButtons);
+      document.querySelectorAll('.agy-chat-rtl-toggle').forEach(el => el.remove());
+      const tb = document.getElementById('agy-direction-toolbar');
+      if (tb) tb.remove();
+      document.querySelectorAll('[data-testid="conversation-view"]').forEach(v => v.classList.remove('agy-rtl-chat-disabled'));
       document.body.classList.remove('agy-rtl-chat-disabled');
     };
 
     window.__ANTIGRAVITY_RTL_INJECTED__ = true;
-    return { status: 'ok_direct_dropdown_embedded' };
+    return { status: 'ok_split_per_chat_and_selection_tools' };
   })()`;
 
   for (const page of pages) {
